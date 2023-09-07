@@ -9,6 +9,7 @@ import AIinterface as interface
 #can use deepcopy, instead store in dictionary
 
 
+
 #iphone use 328 size
 SIZE = 328
 SQUARESIZE = SIZE / 8
