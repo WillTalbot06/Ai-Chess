@@ -1,10 +1,13 @@
-import pygame, sys, time
+import pygame, sys, time, copy
 from pygame.locals import QUIT
 import AIinterface as interface
 
 #Test Stalemate
 #Start on AI properly
 #link to GitHub and save as a checkpoint
+#copy objects - take img out of piece object so 
+#can use deepcopy, instead store in dictionary
+
 
 #iphone use 328 size
 SIZE = 328
@@ -57,41 +60,51 @@ class Piece:
         if board.board[i][j] == self:
           return (j,i) #in form x,y
 
+  def reset(self):
+    for piece in piecesCodes:
+      if piece[1] == self.type:
+        self.code = self.colour[0].lower() + piece[0]
+
 class Board:
-  def __init__(self):
+  def __init__(self,setup=True):
     #Creates board
     board = []
     for i in range(8):
       board.append([None]*8)
+    if setup:
+      #Creates and places pieces
+      for colour in range(2):
+        row = colour
+        if colour == 1:
+          row = 7
+    
+        board[row][0] = Piece(piecesCodes[1][1],colours[colour])
+        board[row][7] = Piece(piecesCodes[1][1],colours[colour])
+        board[row][1] = Piece(piecesCodes[4][1],colours[colour])
+        board[row][6] = Piece(piecesCodes[4][1],colours[colour])
+        board[row][2] = Piece(piecesCodes[2][1],colours[colour])
+        board[row][5] = Piece(piecesCodes[2][1],colours[colour])
+        board[row][3] = Piece(piecesCodes[3][1],colours[colour])
+        board[row][4] = Piece(piecesCodes[5][1],colours[colour])
+    
+        #Places pawns
+        for i in range(8):
+          if colour == 0:
+            board[1][i] = Piece(piecesCodes[0][1],colours[colour])
+          else:
+            board[6][i] = Piece(piecesCodes[0][1],colours[colour])
   
-    #Creates and places pieces
-    for colour in range(2):
-      row = colour
-      if colour == 1:
-        row = 7
-  
-      board[row][0] = Piece(piecesCodes[1][1],colours[colour])
-      board[row][7] = Piece(piecesCodes[1][1],colours[colour])
-      board[row][1] = Piece(piecesCodes[4][1],colours[colour])
-      board[row][6] = Piece(piecesCodes[4][1],colours[colour])
-      board[row][2] = Piece(piecesCodes[2][1],colours[colour])
-      board[row][5] = Piece(piecesCodes[2][1],colours[colour])
-      board[row][3] = Piece(piecesCodes[3][1],colours[colour])
-      board[row][4] = Piece(piecesCodes[5][1],colours[colour])
-  
-      #Places pawns
-      for i in range(8):
-        if colour == 0:
-          board[1][i] = Piece(piecesCodes[0][1],colours[colour])
-        else:
-          board[6][i] = Piece(piecesCodes[0][1],colours[colour])
-
     self.board = board
     self.Promotionable = []
     self.EnPassantable = []
     self.MovedPieces = []
+    self.SavedMoves = []
 
-
+  def copy(self):
+    Copy = Board(False)
+    for i in range(8):
+      for j in range(8):
+        Copy.board[i][j] = self.board[i][j]
 
 
   def __str__(self):
@@ -180,7 +193,15 @@ class Player:
     print(possibleMoves)
     return possibleMoves
     
-
+def moveScoring(moves,Board):
+  ScoredMoves = []
+  for move in moves:
+    #do move
+    #compare changes
+    value = 0
+    ScoredMoves.append([move,value])
+  return ScoredMoves
+  
 def DrawClock():
   for c in range(2):
     player = Players[c]
@@ -761,7 +782,7 @@ def formatMove(currentX,currentY,newX,newY,castle=None,Save=True):
   move = ''
   piece = board.board[currentY][currentX]
   if Save and piece.colour == 'White':
-    SavedMoves.append(' 1. ')
+    board.SavedMoves.append(' 1. ')
   if piece.type != 'Pawn':
     move += piece.code[1]
   if castle != None:
@@ -799,13 +820,13 @@ def formatMove(currentX,currentY,newX,newY,castle=None,Save=True):
   if not Save:
     return move
   print(f"Move: {move}")
-  SavedMoves.append(move)
-  #print(SavedMoves)
+  board.SavedMoves.append(move)
+  #print(board.SavedMoves)
   
 def SaveGame():
   with open('SaveMoves.txt', 'w') as f:
-    SavedMoves[0] = '1. '
-    for move in SavedMoves:
+    board.SavedMoves[0] = '1. '
+    for move in board.SavedMoves:
       f.write(move)
 
 def GetMove(colour):
@@ -923,6 +944,7 @@ def GetMoves(filename='Moves.txt'):
 
 piecesCodes = [["P", "Pawn"], ["R", "Rook"], ["B", "Bishop"], ["Q", "Queen"], ["N", "Knight"], ["K", "King"]]
 colours = ["Black", "White"]
+PieceValues = {'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900}
 promotionPieces = []
 for p in range(1,5):
   promotionPieces.append(Piece(piecesCodes[p][1],"White"))
@@ -943,7 +965,6 @@ play = True
 i = 1
 selected = None
 PromotionWait = False
-SavedMoves = []
 
 print(board)
 DrawScreen(selected)
@@ -952,9 +973,11 @@ print(board)
 while play:
   if Moves == [] and Players[i].ai:
     #AI move selection
-    initBoard = board
+    #initBoard = copy.deepcopy(board)
     Moves.append(interface.randomMove(Players[i].getPossibleMoves()))
-    board = initBoard
+    #board.board[0][0] = board.board[7][0]
+    print(board)
+    #board = copy.deepcopy(initBoard)
   if Moves == []:
     DrawScreen(selected)
     Players[i].playTime += time.time() - contime
@@ -985,11 +1008,12 @@ while play:
           piece = board.board[currentY][currentX]
           if piece in board.Promotionable and newX < WINDOWWIDTH and newX > SIZE and newY < SIZE - 2 * SQUARESIZE and newY > 2 * SQUARESIZE:
             #if promoting piece and valid area
-            newPiece = promotionPieces[int(newY // SQUARESIZE) - 2]
-            board.board[currentY][currentX] = board.board[newY][newX] = Piece(newPiece.type,colours[i])
-            selected = newPiece
+            type = promotionPieces[int(newY // SQUARESIZE) - 2].type
+            board.board[currentY][currentX].type = type
+            board.board[currentY][currentX].reset()
+            selected = board.board[currentY][currentX]
             board.Promotionable.remove(piece)
-            SavedMoves[-1] = SavedMoves[-1][:-1] + '=' + newPiece.code[1] + ' '
+            board.SavedMoves[-1] = board.SavedMoves[-1][:-1] + '=' + type + ' '
             kings = board.GetKingsPosition()
             for king in kings:
               if inCheckmate(king):
@@ -1041,10 +1065,11 @@ while play:
           pos = event.pos
           x,y = pos
           if x < WINDOWWIDTH and x > SIZE and y < SIZE - 2 * SQUARESIZE and y > 2 * SQUARESIZE:
-            newPiece = promotionPieces[int(y // SQUARESIZE) - 2]
-            board.board[newY][newX] = Piece(newPiece.type,colours[i])
+            type = promotionPieces[int(newY // SQUARESIZE) - 2].type
+            board.board[newY][newX].type = type
+            board.board[newY][newX].reset()
             board.Promotionable.remove(piece)
-            SavedMoves[-1] = SavedMoves[-1][:-1] + '=' + newPiece.code[1] + ' '
+            board.SavedMoves[-1] = board.SavedMoves[-1][:-1] + '=' + board.board[newY][newX].code[1] + ' '
             kings = board.GetKingsPosition()
             for king in kings:
               if inCheckmate(king):
@@ -1100,9 +1125,10 @@ while play:
         for p in piecesCodes:
           if p[0] == promotionPiece:
             code = p[1]
-        board.board[newY][newX] = Piece(code,player.colour)
+        board.board[newY][newX].type = code
+        board.board[newY][newX].reset()
         PromotionWait = False
-        SavedMoves[-1] = SavedMoves[-1][:-1] + '=' + promotionPiece + ' '
+        board.SavedMoves[-1] = board.SavedMoves[-1][:-1] + '=' + promotionPiece + ' '
         board.Promotionable.remove(piece)
         for king in kings:
           if inCheckmate(king):
