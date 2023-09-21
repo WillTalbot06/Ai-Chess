@@ -1,1 +1,1 @@
-1. b3 b5  1. h4 c6  1. f4 e6  1. c3 f5  1. g4 g6  1. Na3 a6  1. Nf3 fg4  1. Bb2 gf3  1. Rc1 fe2  1. b4 ed1=Q  1. Kf2 Qc1  1. Be2 Qb2  1. Ke3 Qc1  1. Bh5 Qd1  1. c4 Qh5  1. f5 Qhh4  1. Rd1 Qh1  1. Nb1 Qd1  1. Kf4 Qb1  1. f6 Qa2  1. f7 Kf7  1. Kf3 Qd2  1. cb5 Qb2  1. ba6 Qb4  1. a7 Ra7  1. Kg3 Qe4  1. Kh2 h5  1. Kg3 h4  1. Kf2 Qd3  1. Ke1 Qc2  1. Kf1 Qd2  1. Kg1 Qe2  1. Kh1 h3  1. Kg1 Ra6  1. Kh1 Qf2 
+1. a3 b5  1. f4 e5  1. fe5 d6  1. ed6 Kd7  1. dc7 Kd6  1. cd8=Q Kc6  1. Qf8 Kc7  1. Qc8 Kb6  1. Qg8 Ka5  1. Qh8 Ka4  1. Qb8 Ka5  1. Qa8 Ka4  1. Qa7 
