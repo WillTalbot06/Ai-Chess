@@ -10,7 +10,8 @@ import AIinterface as interface
 #python -m cProfile -o output.prof main.py
 
 #Node minimax repeating moves
-#remove logging as slow
+#relpit reeeeeeeeealy slow
+#use anaconda on collage computers
 
 #check depths work
 
@@ -211,11 +212,11 @@ class Player:
       print("Chosen move:",move)
       return move[0]
     if self.aitype == 'minimaxNode':
-      SaveToFile('\nAi Move\n\n\n')
+      #SaveToFile('\nAi Move\n\n\n')
       move = minMax(Node(None,0,colours.index(self.colour)),False)
       #ominMax(Node(None,1,1-colours.index(self.colour)),True,-10000000,10000000)
       print(move)
-      SaveToFile(str(move))
+      #SaveToFile(str(move))
       return move[1]
   
   def getPossibleMoves(self):
@@ -332,16 +333,16 @@ class Node:
         if piece != None and piece.colour != self.colour and piece.type != 'King':
           newPieces.append(piece)
           file += str(piece)+', '
-    SaveToFile(file)
+    #SaveToFile(file)
     value = 0
     if len(self.originalPieces) > len(newPieces):
       #print("Piece taken")
-      SaveToFile("Piece taken in Move")
+      #SaveToFile("Piece taken in Move")
       
       for piece in self.originalPieces:
         if piece not in newPieces:
           value += Values[piece.code[1]]
-          SaveToFile(f"{piece.id} gets taken")
+          #SaveToFile(f"{piece.id} gets taken")
           #print(piece.id + "gets taken "+ move)
     
     if len(self.originalPieces) < len(newPieces):
@@ -413,21 +414,21 @@ def minMax(node, isMaximisingPlayer):
         score = 0
       if isMaximisingPlayer:
         score = -score
-      SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
+      #SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
       #undo move
       board = copy.deepcopy(node.board)
       #return score
       return (score,node.move)
-    SaveToFile(str(board))
+    #SaveToFile(str(board))
   node.CreateChildren()
   if isMaximisingPlayer:
-    bestScore = (-1000000,)
+    bestScore = (-10000000,)
     for child in node.children:
       scoreOfChild = minMax(child,False)
       if scoreOfChild[0] > bestScore[0]:
         bestScore = (scoreOfChild[0],child.move)
   else:
-    bestScore = (1000000,)
+    bestScore = (10000000,)
     for child in node.children:
       scoreOfChild = minMax(child,True)
       if scoreOfChild[0] < bestScore[0]:
@@ -445,7 +446,7 @@ def minMax(node, isMaximisingPlayer):
   if isMaximisingPlayer:
     score = -score
   score = bestScore[0]+score
-  SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
+  #SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
   #undo move
   board = copy.deepcopy(node.board)
   return (score,bestScore[1])
@@ -475,7 +476,7 @@ def ominMax(node, isMaximisingPlayer, alpha, beta):
       return score
   node.CreateChildren()
   if isMaximisingPlayer:
-    bestVal = -100000000
+    bestVal = -10000000
     for child in node.children:
       value = minMax(child, 0, alpha, beta)
       bestVal = max(bestVal,value)
@@ -483,7 +484,7 @@ def ominMax(node, isMaximisingPlayer, alpha, beta):
       if beta <= alpha:
         break
   else:
-    bestVal = 100000000
+    bestVal = 10000000
     for child in node.children:
       value = minMax(child, 1, alpha, beta)
       bestVal = min(bestVal, value)
@@ -493,7 +494,7 @@ def ominMax(node, isMaximisingPlayer, alpha, beta):
   if not node.isRoot():
     #undo move
     board = copy.deepcopy(node.board)
-  if abs(bestVal) == 100000000:
+  if abs(bestVal) == 10000000:
     print("best Val INF")
   return bestVal + (2*isMaximisingPlayer-1)*score
 
