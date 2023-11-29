@@ -1326,6 +1326,9 @@ def GetMoves(filename='Moves.txt'):
   return moves
   
 
+with open('log.txt','w') as file:
+  file.write('')
+
 piecesCodes = [["P", "Pawn"], ["R", "Rook"], ["B", "Bishop"], ["Q", "Queen"], ["N", "Knight"], ["K", "King"]]
 colours = ["Black", "White"]
 Values = {'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'Promo':7000,'checkmate':1000000}
@@ -1379,6 +1382,7 @@ while play:
       if event.type == pygame.QUIT:
         play = False
         SaveGame()
+        print("Program Closed")
         winner = 'No-one'
       if event.type == pygame.MOUSEBUTTONDOWN:
         if event.button == 1 and selected == None and not PromotionWait:
