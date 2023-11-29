@@ -1,14 +1,30 @@
 import pygame, sys, time, copy
 from pygame.locals import QUIT
 import AIinterface as interface
-#from config import *
-#from Classes import *
-#from Function import *
 
 #link to GitHub and save as a checkpoint
-#add random into selection when multiple highest to avaid repetition
+#Make move generation more time efficient
 #speed up scoring
-#random move index error
+#Test new move generation
+#Profiler
+#Alpha Beta Pruning - see img
+#https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning/
+#minimax stalemate not working
+#python -m cProfile -o output.prof main.py
+#check speed of changes
+
+
+#node minimax wrong way (see logs)
+#good log is False for initial call
+#other log is True for initial call
+#check depths work
+
+
+#play moves 1. a4 b5  1. ab5 c6  1. bc6 dc6  1. Ra7 
+#new minmax no alpha beta
+#test
+
+#{'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'Promo':7000,'checkmate':1000000}
 
 #iphone use 328 size
 SIZE = 328
@@ -34,8 +50,12 @@ pygame.display.set_caption("Chess")
 screen.fill(BACK_COLOUR)
 pygame.mouse.set_cursor(pygame.cursors.diamond)
 
-playTxtMoves = False
-SEARCHDEPTH = 1
+playTxtMoves = True
+AIType = 'minimaxNode'#'minimaxRec'#'minimaxNode'
+whiteAI = True
+blackAI = False
+SEARCHDEPTH = 1 #For original minimax (minimaxRec)
+MAXDEPTH = 2 # for new minimax (minimaxNode)
 
 class Piece:
   def __init__(self,type,colour,start):
@@ -55,9 +75,10 @@ class Piece:
     return f"{self.code} {self.GetPosition()}"
 
   def __eq__(self,piece):
-    if isinstance(piece,Piece):
+    try:
       return self.id == piece.id
-    return False
+    except:
+      return False
 
   def GetPosition(self):
     for i in range(8):
@@ -105,12 +126,6 @@ class Board:
     self.MovedPieces = []
     self.SavedMoves = []
 
-  def copy(self):
-    Copy = Board(False)
-    for i in range(8):
-      for j in range(8):
-        Copy.board[i][j] = self.board[i][j]
-
 
   def __str__(self):
     txt = '\n'
@@ -157,8 +172,8 @@ class Board:
 
   def GetKingsPosition(self):
     loc = []
-    for i in range(8):
-      for j in range(8):
+    for j in range(8):
+      for i in range(8):
         if self.board[i][j] != None and self.board[i][j].type == 'King':
           loc.append(self.board[i][j])
         if len(loc) == 2:
@@ -184,38 +199,164 @@ class Player:
       return self.colour == other.colour
     return False
 
-  def getPieces(self):
+  def getPieces(self,position=False):
     pieces = []
     for i in range(8):
       for j in range(8):
         piece = board.board[i][j]
         if piece != None and piece.colour == self.colour:
-          pieces.append(piece)
+          if position:
+            pieces.append([piece,j,i])
+          else:
+            pieces.append(piece)
     return pieces
 
   def aiMove(self):
     if self.aitype == 'Random':
       return interface.randomMove(self.getPossibleMoves())
-    if self.aitype == 'fixedPieceEvaluation':
+    if self.aitype == 'minimaxRec':
       moves = moveScoring(self,0)
       print(moves)
       move = interface.fixedPieceEvaluation(moves)
       print("Chosen move:",move)
       return move[0]
+    if self.aitype == 'minimaxNode':
+      move = minMax(Node(None,0,colours.index(self.colour)),False)
+      #ominMax(Node(None,1,1-colours.index(self.colour)),True,-10000000,10000000)
+      print(move)
+      SaveToFile(str(move))
+      return move[1]
   
   def getPossibleMoves(self):
-    pieces = self.getPieces()
+    pieces = self.getPieces(True)
     possibleMoves = []
     for piece in pieces:
-      x, y = piece.GetPosition()
+      x = piece[1]
+      y = piece[2]
+      piece = piece[0]
       for i in range(8):
         for j in range(8):
-          if LegalMove(x,y,i,j,self.colour,False):
-            possibleMoves.append(formatMove(x,y,i,j,Save=False))
-            if piece.type == 'King' and (abs(x-i)>1 or abs(y-j)>1):
-              print(f"{piece} is castleing from {x},{y} to {i},{j}, {possibleMoves[-1]}")
-    print(possibleMoves)
+          valid = False
+          if piece.type == 'Pawn' and (self.colour == 'White' and j<=y and j >= y-2 or self.colour == 'Black' and j>=y and j <= y+2) and abs(x-i) <= 1:
+            valid = True
+          elif piece.type == 'Bishop' and abs(y-j) == abs(x-i) and self.clear(x,y,i,j):
+            valid = True
+          elif piece.type == 'Rook' and (x == i or y == j) and self.clear(x,y,i,j):
+            valid = True
+          elif piece.type == 'King' and (abs(y-j) <= 1 and abs(x-i) <= 1 or abs(x-i) <= 3 and y==j and self.clear(x,y,i,j)):
+            valid = True
+          elif piece.type == 'Knight' and (abs(y-j) == 1 and abs(x-i) == 2 or abs(y-j) == 2 and abs(x-i) == 1):
+            valid = True
+          elif piece.type == 'Queen' and (x == i or y == j or abs(y-j) == abs(x-i)) and self.clear(x,y,i,j):
+            valid = True
+          if valid and board.board[j][i] != None and board.board[j][i].colour == self.colour:
+            valid = False
+          if valid:
+            if LegalMove(x,y,i,j,self.colour,False):
+              possibleMoves.append(formatMove(x,y,i,j,Save=False))
+              if piece.type == 'King' and (abs(x-i)>1 or abs(y-j)>1):
+                print(f"{piece} is castleing from {x},{y} to {i},{j}, {possibleMoves[-1]}")
+            else:
+              pass
+              #print(f"{piece} not legal to {i},{j}")
+          else:
+            pass
+            #print(f"Not valid {piece} to {i},{j}")
+    #print("possible moves are:",possibleMoves)
     return possibleMoves
+
+  def clear(self,x,y,i,j):
+    if x == i:#same column
+      k=1
+      if y>j:
+        k = -1
+      for s in range(y+k,j,k):
+        if board.board[s][x] != None:
+          return False
+      return True
+    if y == j:#same row
+      k=1
+      if x>i:
+        k = -1
+      for s in range(x+k,i,k):
+        if board.board[y][s] != None:
+          return False
+      return True
+    if abs(y-j) == abs(x-i):#on diagonal
+      if y-j == x-i:#\ diagonal
+        k = 1
+        if j < y:
+          k = -1
+        d = x-y
+        for s in range(y+k,j,k):
+          if board.board[s][s+d] != None:
+            return False
+        return True
+      #/ diagonal
+      k = 1
+      if y > j:
+        k = -1
+      d = x+y
+      for s in range(y+k,j,k):
+        if board.board[s][d-s] != None:
+          return False
+      return True
+    print(f"End of clear {x},{y} to {i},{j}")
+
+class Node:
+  def __init__(self,move,depth,prevPlayerID):
+    self.move = move #move that has/will be done
+    self.playerID = (prevPlayerID+1) % 2 #player whose turn is
+    #id 1 is white, id 0 is black
+    self.depth = depth #the layer of nodes this node is on
+    self.children = []
+    self.board = copy.deepcopy(board)
+    self.originalPieces = []
+    self.colour = colours[self.playerID]
+    for k in range(8):
+      for j in range(8):
+        piece = self.board.board[k][j]
+        if piece != None and piece.colour != self.colour and piece.type != 'King':
+          self.originalPieces.append(piece)
+    self.score = 0
+
+  def isRoot(self):
+    return self.move == None
+
+  def isLeaf(self):
+    return self.depth >= MAXDEPTH
+
+  def CreateChildren(self):
+    moves = Players[1-self.playerID].getPossibleMoves()
+    for move in moves:
+      self.children.append(Node(move,self.depth+1,self.playerID))
+  
+  def Score(self):
+    #compare changes
+    newPieces = []
+    file = ''
+    for i in range(8):
+      for j in range(8):
+        piece = board.board[i][j]
+        if piece != None and piece.colour != self.colour and piece.type != 'King':
+          newPieces.append(piece)
+          file += str(piece)+', '
+    SaveToFile(file)
+    value = 0
+    if len(self.originalPieces) > len(newPieces):
+      #print("Piece taken")
+      SaveToFile("Piece taken in Move")
+      
+      for piece in self.originalPieces:
+        if piece not in newPieces:
+          value += Values[piece.code[1]]
+          SaveToFile(f"{piece.id} gets taken")
+          #print(piece.id + "gets taken "+ move)
+    
+    if len(self.originalPieces) < len(newPieces):
+      print("Scoring: more new pieces")
+    return value
+    
 
 def performMove(move,colour):
   currentX,currentY,newX,newY,promotionPiece = GetMove(colour,move)
@@ -229,7 +370,142 @@ def performMove(move,colour):
     return True,piece,promotionPiece
   return False,piece,promotionPiece
 
+def doMove(node):
+  legal,piece,promotionPiece = performMove(node.move,colours[node.playerID])
+  promo = False
+  checkmate = False
+  stalemate = False
+  validMoves = True
+  if legal:
+    if piece in board.Promotionable:
+      if promotionPiece == None:
+        promotionPiece = interface.aiPromotion()
+      if promotionPiece != None:
+        print(f"{piece} is promoting to {promotionPiece}")
+        x,y = piece.GetPosition()
+        for p in piecesCodes:
+          if p[0] == promotionPiece:
+            code = p[1]
+        board.board[y][x].type = code
+        board.board[y][x].reset()
+        promo = True
+        board.Promotionable.remove(piece)
+    
+    kings = board.GetKingsPosition()
+    for king in kings:
+      if inCheckmate(king):
+        checkmate = True
+        validMoves = False
   
+    if not checkmate and Stalemate(Players[(i+1)%2]):
+      stalemate = True
+      validMoves = False
+      print("Stalemate so no valid moves left")
+  else:
+    print(f"Illegal Move by AI {node.playerID}: {node.move}")
+  return promo,checkmate,stalemate,validMoves
+
+def minMax(node, isMaximisingPlayer):
+  global board
+  promo,checkmate,stalemate = False,False,False
+  if node.move is not None:#there is a move to do
+    #Do move
+    promo,checkmate,stalemate,validMoves = doMove(node)
+    if node.isLeaf() or not validMoves:
+      #eval move
+      score = node.Score()
+      if checkmate:
+        score += Values['checkmate']
+      if promo:
+        score += Values['promo']
+      if stalemate:
+        score = 0
+      if isMaximisingPlayer:
+        score = -score
+      SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
+      #undo move
+      board = copy.deepcopy(node.board)
+      #return score
+      return (score,node.move)
+    SaveToFile(str(board))
+  node.CreateChildren()
+  if isMaximisingPlayer:
+    bestScore = (-1000000,)
+    for child in node.children:
+      scoreOfChild = minMax(child,False)
+      if scoreOfChild[0] > bestScore[0]:
+        bestScore = (scoreOfChild[0],child.move)
+  else:
+    bestScore = (1000000,)
+    for child in node.children:
+      scoreOfChild = minMax(child,True)
+      if scoreOfChild[0] < bestScore[0]:
+        bestScore = (scoreOfChild[0],child.move)
+  #Once done all the leaf node under node
+  #eval move
+  score = node.Score()
+  if checkmate:
+    score += Values['checkmate']
+  if promo:
+    score += Values['promo']
+  if stalemate:
+    score = 0
+  #add score to the best of the children
+  if not isMaximisingPlayer:
+    score = -score
+  score = bestScore[0]+score
+  SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
+  #undo move
+  board = copy.deepcopy(node.board)
+  return (score,bestScore[1])
+
+def SaveToFile(txt):
+  with open("log.txt","a") as f:
+    f.write(txt+"\n")
+
+def ominMax(node, isMaximisingPlayer, alpha, beta):
+  global board
+  score = 0
+  if not node.isRoot():
+    #do move
+    print(f"Doing move {node.move}")
+    promo,checkmate,stalemate,validMoves = doMove(node)
+    #evaluate move
+    score = node.Score()
+    if checkmate:
+      score += Values['checkmate']
+    if promo:
+      score += Values['promo']
+    if stalemate:
+      score = 0
+    if node.isLeaf() or not validMoves:
+      #undo move
+      board = copy.deepcopy(node.board)
+      return score
+  node.CreateChildren()
+  if isMaximisingPlayer:
+    bestVal = -100000000
+    for child in node.children:
+      value = minMax(child, 0, alpha, beta)
+      bestVal = max(bestVal,value)
+      alpha = max(alpha,bestVal)
+      if beta <= alpha:
+        break
+  else:
+    bestVal = 100000000
+    for child in node.children:
+      value = minMax(child, 1, alpha, beta)
+      bestVal = min(bestVal, value)
+      beta = min(beta, bestVal)
+      if beta <= alpha:
+        break
+  if not node.isRoot():
+    #undo move
+    board = copy.deepcopy(node.board)
+  if abs(bestVal) == 100000000:
+    print("best Val INF")
+  return bestVal + (2*isMaximisingPlayer-1)*score
+
 def moveScoring(origPlayer,depth,originalBoard=None):
   global board
   if originalBoard == None:
@@ -257,7 +533,7 @@ def moveScoring(origPlayer,depth,originalBoard=None):
     value = 0
     checkmate = False
     validMoves = True #If there is any valid moves after this move
-    print("Checking move "+ move)
+    #print("Checking move "+ move)
     #do move
     valid,piece,promotionPiece = performMove(move,colour)
     #value move
@@ -286,6 +562,7 @@ def moveScoring(origPlayer,depth,originalBoard=None):
       if not checkmate and Stalemate(Players[(i+1)%2]):
         value = 0
         validMoves = False
+        print("Stalemate so no valid moves left")
 
         
     #compare changes
@@ -298,10 +575,6 @@ def moveScoring(origPlayer,depth,originalBoard=None):
     
     if len(originalPieces) > len(newPieces):
       #print("Piece taken")
-      temp = ''
-      for p in newPieces:
-        temp += p.id + '  '
-      #print(temp)
       for piece in originalPieces:
         if piece not in newPieces:
           value += Values[piece.code[1]]
@@ -309,8 +582,9 @@ def moveScoring(origPlayer,depth,originalBoard=None):
     if len(originalPieces) < len(newPieces):
       print("Scoring: more new pieces")
     if depth != SEARCHDEPTH and validMoves:
-      value += posNeg*interface.fixedPieceEvaluation(moveScoring(origPlayer,depth+1))[1]
-    print("Moved valued at",value)
+      depthvalue = interface.fixedPieceEvaluation(moveScoring(origPlayer,depth+1))[1]
+      value += posNeg*depthvalue
+    #print("Moved valued at",value)
     ScoredMoves.append([move,value])
     board = copy.deepcopy(originalBoard)
   #print(ScoredMoves)
@@ -354,19 +628,10 @@ def ValidMove(currentX, currentY, newX, newY, doMove=True):
   if newX == currentX and newY == currentY:
     return True
 
-  #temp so shows errors
   function = globals()["Valid"+piece.type+"Move"]
   if function(currentX, currentY, newX, newY, doMove):
     return True
   return False
-  
-  try:
-    function = globals()["Valid"+piece.type+"Move"]
-    if function(currentX, currentY, newX, newY, doMove):
-      return True
-    return False
-  except Exception as e: 
-    print(e)
 
 def ValidPawnMove(currentX, currentY, newX, newY, doMove=True):
   piece = board.board[currentY][currentX]
@@ -574,13 +839,6 @@ def inCheck(king):
     print("not king")
     return False
   x,y = king.GetPosition()
-  #Check spaces arround king
-  for i in range(-1,2):
-    for j in range(-1,2):
-      if y+i >= 0 and y+i < 8 and x+j >= 0 and x+j < 8 and not (j == 0 and i == 0):
-        place = board.board[y+i][x+j]
-        if place != None and place.colour != king.colour and place.type == 'King':
-          return True
   #Check for pawns
   if king.colour == 'Black':
     for i in range(-1,2,2):
@@ -608,35 +866,33 @@ def inCheck(king):
       if place.type == 'Queen' or place.type == 'Rook':
         if ValidRookMove(x,i,x,y):
           return True
-  #Check for bishop and queen in ++ direction
+  #Check for bishop and queen in diagonals
   for i in range(1,8):
+    # ++ direction
     if x+i < 8 and y+i < 8:
       place = board.board[y+i][x+i]
       if place != None and place.colour != king.colour and (place.type == 'Queen' or place.type == 'Bishop'):
         if ValidBishopMove(x+i,y+i,x,y):
           return True
-  # -- direction
-  for i in range(1,8):
+    # -- direction
     if x-i >= 0 and y-i >= 0:
       place = board.board[y-i][x-i]
       if place != None and place.colour != king.colour and (place.type == 'Queen' or place.type == 'Bishop'):
         if ValidBishopMove(x-i,y-i,x,y):
           return True
-  # +- direction
-  for i in range(1,8):
+    # +- direction
     if x-i >= 0 and y+i < 8:
       place = board.board[y+i][x-i]
       if place != None and place.colour != king.colour and (place.type == 'Queen' or place.type == 'Bishop'):
         if ValidBishopMove(x-i,y+i,x,y):
           return True
-  # -+ direction
-  for i in range(1,8):
+    # -+ direction
     if x+i < 8 and y-i >= 0:
       place = board.board[y-i][x+i]
       if place != None and place.colour != king.colour and (place.type == 'Queen' or place.type == 'Bishop'):
         if ValidBishopMove(x+i,y-i,x,y):
           return True
-  #Checks for kings
+  #Checks for knights
   for i in range(-2,3,4):
     for j in range(-1,2,2):
       if y+i >= 0 and y+i < 8 and x+j >= 0 and x+j < 8:
@@ -646,6 +902,13 @@ def inCheck(king):
       if y+j >= 0 and y+j < 8 and x+i >= 0 and x+i < 8:
         place = board.board[y+j][x+i]
         if place != None and place.type == 'Knight' and place.colour != king.colour:
+          return True
+  #Check spaces arround king
+  for i in range(-1,2):
+    for j in range(-1,2):
+      if y+i >= 0 and y+i < 8 and x+j >= 0 and x+j < 8 and not (j == 0 and i == 0):
+        place = board.board[y+i][x+j]
+        if place != None and place.colour != king.colour and place.type == 'King':
           return True
   return False
 
@@ -772,12 +1035,8 @@ def Stalemate(player):
       if len(opieces) == 1:
         if opieces[0].type == 'King':
           return True
-  for piece in pieces:
-    x, y = piece.GetPosition()
-    for i in range(8):
-      for j in range(8):
-        if LegalMove(x,y,i,j,player.colour,False):
-          return False
+  if player.getPossibleMoves() != []:
+    return False
   print("\nStalemate\n\n")
   return True
 
@@ -1083,10 +1342,12 @@ for p in range(1,5):
 Players = []
 for i in range(2):
   Players.append(Player(colours[i]))
-Players[1].ai = True
-Players[0].ai = True
-Players[1].aitype = 'fixedPieceEvaluation'
-Players[0].aitype = 'fixedPieceEvaluation'
+if whiteAI:
+  Players[1].ai = True
+if blackAI:
+  Players[0].ai = True
+Players[1].aitype = AIType
+Players[0].aitype = AIType
 global board
 board = Board()
 
@@ -1102,7 +1363,6 @@ i = 1
 selected = None
 PromotionWait = False
 
-print(board)
 DrawScreen(selected)
 print(Players[i].colour+"'s turn")
 print(board)
@@ -1110,13 +1370,7 @@ while play:
   if Moves == [] and Players[i].ai:
     #AI move selection
     DrawScreen(None)
-    initBoard = copy.deepcopy(board)
     Moves.append(Players[i].aiMove())
-    board.MovedPieces.append(board.board[0][0])
-    for piece in board.MovedPieces:
-      print(piece)
-    print(board)
-    board = copy.deepcopy(initBoard)
   if Moves == [] and not Players[i].ai:
     DrawScreen(selected)
     Players[i].playTime += time.time() - contime
@@ -1223,7 +1477,7 @@ while play:
             print(Players[i].colour+"'s turn")
             print(board)
 
-  elif len(Moves) > 0:
+  else:
     player = Players[i]
     DrawScreen(None)
     Players[i].playTime += time.time() - contime
