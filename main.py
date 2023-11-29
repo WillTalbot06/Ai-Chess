@@ -2,27 +2,17 @@ import pygame, sys, time, copy
 from pygame.locals import QUIT
 import AIinterface as interface
 
-#link to GitHub and save as a checkpoint
+
 #Make move generation more time efficient
 #speed up scoring
-#Test new move generation
-#Profiler
 #Alpha Beta Pruning - see img
 #https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning/
-#minimax stalemate not working
 #python -m cProfile -o output.prof main.py
-#check speed of changes
 
+#Node minimax repeating moves
+#remove logging as slow
 
-#node minimax wrong way (see logs)
-#good log is False for initial call
-#other log is True for initial call
 #check depths work
-
-
-#play moves 1. a4 b5  1. ab5 c6  1. bc6 dc6  1. Ra7 
-#new minmax no alpha beta
-#test
 
 #{'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'Promo':7000,'checkmate':1000000}
 
@@ -53,7 +43,7 @@ pygame.mouse.set_cursor(pygame.cursors.diamond)
 playTxtMoves = True
 AIType = 'minimaxNode'#'minimaxRec'#'minimaxNode'
 whiteAI = True
-blackAI = False
+blackAI = True
 SEARCHDEPTH = 1 #For original minimax (minimaxRec)
 MAXDEPTH = 2 # for new minimax (minimaxNode)
 
@@ -221,6 +211,7 @@ class Player:
       print("Chosen move:",move)
       return move[0]
     if self.aitype == 'minimaxNode':
+      SaveToFile('\nAi Move\n\n\n')
       move = minMax(Node(None,0,colours.index(self.colour)),False)
       #ominMax(Node(None,1,1-colours.index(self.colour)),True,-10000000,10000000)
       print(move)
@@ -451,7 +442,7 @@ def minMax(node, isMaximisingPlayer):
   if stalemate:
     score = 0
   #add score to the best of the children
-  if not isMaximisingPlayer:
+  if isMaximisingPlayer:
     score = -score
   score = bestScore[0]+score
   SaveToFile(f"Score for move {node.move} by {node.playerID} which maximising is {isMaximisingPlayer} and at node depth {node.depth} is {score}")
