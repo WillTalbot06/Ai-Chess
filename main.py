@@ -15,7 +15,9 @@ import AIinterface as interface
 
 #check depths work
 
-#{'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'Promo':7000,'checkmate':1000000}
+#node en passant
+
+#{'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'promo':7000,'checkmate':1000000}
 
 #iphone use 328 size
 SIZE = 328
@@ -541,7 +543,7 @@ def moveScoring(origPlayer,depth,originalBoard=None):
               code = p[1]
           board.board[y][x].type = code
           board.board[y][x].reset()
-          value += Values['Promo']
+          value += Values['promo']
           board.Promotionable.remove(piece)
           
       kings = board.GetKingsPosition()
@@ -1323,7 +1325,7 @@ with open('log.txt','w') as file:
 
 piecesCodes = [["P", "Pawn"], ["R", "Rook"], ["B", "Bishop"], ["Q", "Queen"], ["N", "Knight"], ["K", "King"]]
 colours = ["Black", "White"]
-Values = {'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'Promo':7000,'checkmate':1000000}
+Values = {'P':10,'N':30,'B':35,'R':50,'Q':90,'K':900,'promo':7000,'checkmate':1000000}
 
 pieceImgs = {}
 for colour in colours:
