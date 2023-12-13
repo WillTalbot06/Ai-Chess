@@ -43,10 +43,10 @@ pygame.display.set_caption("Chess")
 screen.fill(BACK_COLOUR)
 pygame.mouse.set_cursor(pygame.cursors.diamond)
 
-playTxtMoves = True
+playTxtMoves = False
 AIType = 'minimaxNode'#'minimaxRec'#'minimaxNode'
 whiteAI = True
-blackAI = True
+blackAI = False
 SEARCHDEPTH = 1 #For original minimax (minimaxRec)
 MAXDEPTH = 2 # for new minimax (minimaxNode)
 
@@ -399,7 +399,7 @@ def doMove(node):
     print(f"Illegal Move by AI {node.playerID}: {node.move}")
   return promo,checkmate,stalemate,validMoves
 
-def minMax(node, isMaximisingPlayer):
+def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
   global board
   promo,checkmate,stalemate = False,False,False
   if node.move is not None:#there is a move to do
@@ -426,15 +426,23 @@ def minMax(node, isMaximisingPlayer):
   if isMaximisingPlayer:
     bestScore = (-10000000,)
     for child in node.children:
-      scoreOfChild = minMax(child,False)
+      scoreOfChild = minMax(child,False,alpha,beta)
       if scoreOfChild[0] > bestScore[0]:
         bestScore = (scoreOfChild[0],child.move)
+      if bestScore[0] > alpha[0]:
+        alpha = bestScore
+      if beta[0] <= alpha[0]:
+        break
   else:
     bestScore = (10000000,)
     for child in node.children:
-      scoreOfChild = minMax(child,True)
+      scoreOfChild = minMax(child,True,alpha,beta)
       if scoreOfChild[0] < bestScore[0]:
         bestScore = (scoreOfChild[0],child.move)
+      if bestScore[0] < beta[0]:
+        beta = bestScore
+      if beta[0] <= alpha[0]:
+        break
   #Once done all the leaf node under node
   #eval move
   score = node.Score()
@@ -835,6 +843,7 @@ def inCheck(king):
   x,y = king.GetPosition()
   #Check for pawns
   if king.colour == 'Black':
+    #checks bottom left and right squares
     for i in range(-1,2,2):
       if x+i >= 0 and x+i < 8 and y+1 < 8:
         place = board.board[y+1][x+i]
@@ -842,6 +851,7 @@ def inCheck(king):
           return True
   elif king.colour == 'White':
     for i in range(-1,2,2):
+      #checks for top left and right squares
       if x+i >= 0 and x+i < 8 and y-1 >= 0:
         place = board.board[y-1][x+i]
         if place != None and place.code == 'bP':
@@ -1537,7 +1547,7 @@ print("End of Game")
 if len(Moves) > 0:
   print("moves left")
 SaveGame()
-time.sleep(1000)
-time.sleep(20)
+#pygame.time.wait(1000000)
+pygame.time.wait(20000)
 pygame.quit()
     
