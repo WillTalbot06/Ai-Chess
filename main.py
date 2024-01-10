@@ -1117,6 +1117,8 @@ def formatMove(currentX,currentY,newX,newY,castle=None,Save=True):
   board.SavedMoves.append(move)
   
 def SaveGame():
+  if len(board.SavedMoves) == 0:
+    return
   with open('SaveMoves.txt', 'w') as f:
     board.SavedMoves[0] = '1. '
     for move in board.SavedMoves:
@@ -1275,6 +1277,7 @@ play = True
 i = 1
 selected = None
 PromotionWait = False
+quit = False
 
 DrawScreen(selected)
 print(Players[i].colour+"'s turn")
@@ -1291,6 +1294,7 @@ while play:
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
         play = False
+        quit = True
         SaveGame()
         print("Program Closed")
         winner = 'No-one'
@@ -1452,6 +1456,7 @@ print("End of Game")
 if len(Moves) > 0:
   print("moves left")
 SaveGame()
-pygame.time.wait(20000)
+if not quit:
+  pygame.time.wait(20000)
 pygame.quit()
     
