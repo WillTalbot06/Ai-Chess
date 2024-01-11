@@ -2,7 +2,14 @@ import pygame, sys, time, copy
 from pygame.locals import QUIT
 import AIinterface as interface
 
-SIZE = 328
+
+#1. a4 c5  1. b3 b6  1. c4 Nc6  1. d3 d6  1. e4 f6  1. f4 g6  1. g3 Ba6  1. a5 ba5  1. e5 
+
+#pawn e5 promote to queen
+#Pawn move 2 forward. Rook or Queen of opponent move along final rank puts that pawn into promotionable
+#1. a4 c5  1. b3 b6  1. c4 Nc6  1. d3 d5  1. cd5 Qd5  1. a5 ba5  1. b4 Nb4  1. Ra5 Nc6  1. Ra4 e6  1. Ra3 c4  1. Ra4 cd3  1. Qd3 Qc5  1. Bb2 a5  1. Ra2 Ba6  1. Qb3 Rb8  1. Qa4 Rb2  1. Rb2 Qc3  1. Nc3 Nf6  1. Qc6 Nd7  1. Qa6 Be7  1. Qa5 O-O  1. Qa7 Rd8  1. Qd7 Rd7  1. Na4 Ra7  1. Nb6 Bd8  1. Nc8 Ra8  1. Nd6 Ra7  1. Nf7 Rf7  1. Ra2 g5  1. Ra8 Rd7  1. Rd8 Rd8  1. e4 Rc8  1. e5=Q 
+
+SIZE = 480
 SQUARESIZE = SIZE / 8
 WINDOWSIZE = (SIZE + SQUARESIZE, SIZE + 2 * SQUARESIZE)
 WINDOWWIDTH, WINDOWHEIGHT = WINDOWSIZE
@@ -25,9 +32,9 @@ pygame.display.set_caption("Chess")
 screen.fill(BACK_COLOUR)
 pygame.mouse.set_cursor(pygame.cursors.diamond)
 
-playTxtMoves = False
+playTxtMoves = True
 AIType = 'minimaxNode'
-whiteAI = False
+whiteAI = True
 blackAI = False
 SEARCHDEPTH = 1 #For original minimax (minimaxRec)
 MAXDEPTH = 2 # for new minimax (minimaxNode)
@@ -375,6 +382,7 @@ def doMove(node):
 
 def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
   global board
+  SaveToFile(f"Scoring {node} {"maximising" if isMaximisingPlayer else "minimising"}")
   promo,checkmate,stalemate = False,False,False
   if node.move is not None:#there is a move to do
     #Do move
@@ -393,6 +401,7 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
       #undo move
       board = copy.deepcopy(node.board)
       #return score
+      SaveToFile(f"Score {node}: {score}")
       return (score,node.move)
   node.CreateChildren()
   if isMaximisingPlayer:
@@ -403,7 +412,10 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
         bestScore = (scoreOfChild[0],child.move)
       if bestScore[0] > alpha[0]:
         alpha = bestScore
+        SaveToFile(f"Setting Alpha (max) to {alpha}")
       if beta[0] <= alpha[0]:
+        pass
+        SaveToFile(f"Breaking {child}: {alpha}, {beta}")
         break
   else:
     bestScore = (10000000,)
@@ -413,7 +425,10 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
         bestScore = (scoreOfChild[0],child.move)
       if bestScore[0] < beta[0]:
         beta = bestScore
+        SaveToFile(f"Setting Beta (min) to {beta}")
       if beta[0] <= alpha[0]:
+        pass
+        SaveToFile(f"Breaking {child}: {alpha}, {beta}")
         break
   #Once done all the leaf node under node
   #eval move
@@ -430,6 +445,7 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
   score = bestScore[0]+score
   #undo move
   board = copy.deepcopy(node.board)
+  SaveToFile(f"Score {node}: {score}")
   return (score,bestScore[1])
 
 def SaveToFile(txt):
