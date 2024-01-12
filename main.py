@@ -34,7 +34,7 @@ pygame.mouse.set_cursor(pygame.cursors.diamond)
 
 playTxtMoves = True
 AIType = 'minimaxNode'
-whiteAI = True
+whiteAI = False
 blackAI = False
 SEARCHDEPTH = 1 #For original minimax (minimaxRec)
 MAXDEPTH = 2 # for new minimax (minimaxNode)
@@ -951,15 +951,15 @@ def Stalemate(player):
 def DoMove(currentX,currentY,newX,newY,piece):
   if piece not in board.MovedPieces:
     board.MovedPieces.append(piece)
-  for piece in board.EnPassantable:
-    if piece.EnPassant:
-      if piece.colour == 'White':
+  for pawn in board.EnPassantable:
+    if pawn.EnPassant:
+      if pawn.colour == 'White':
         y = 4
       else:
         y = 3
       removed = False
       for x in range(8):
-        if board.board[y][x] == piece:
+        if board.board[y][x] == pawn:
           board.board[y][x] = None
           removed = True
       if not removed:
