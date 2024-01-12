@@ -382,7 +382,7 @@ def doMove(node):
 
 def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
   global board
-  SaveToFile(f"Scoring {node} {"maximising" if isMaximisingPlayer else "minimising"}")
+  #SaveToFile(f"Scoring {node} {"maximising" if isMaximisingPlayer else "minimising"} alpha={alpha}, beta={beta}")
   promo,checkmate,stalemate = False,False,False
   if node.move is not None:#there is a move to do
     #Do move
@@ -401,7 +401,7 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
       #undo move
       board = copy.deepcopy(node.board)
       #return score
-      SaveToFile(f"Score {node}: {score}")
+      #SaveToFile(f"Score {node}: {score}")
       return (score,node.move)
   node.CreateChildren()
   if isMaximisingPlayer:
@@ -412,10 +412,10 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
         bestScore = (scoreOfChild[0],child.move)
       if bestScore[0] > alpha[0]:
         alpha = bestScore
-        SaveToFile(f"Setting Alpha (max) to {alpha}")
+        #SaveToFile(f"Setting Alpha (max) to {alpha}")
       if beta[0] <= alpha[0]:
         pass
-        SaveToFile(f"Breaking {child}: {alpha}, {beta}")
+        #SaveToFile(f" Breaking {child}: {alpha}, {beta}")
         break
   else:
     bestScore = (10000000,)
@@ -425,28 +425,14 @@ def minMax(node, isMaximisingPlayer,alpha = (-10000000,),beta = (10000000,)):
         bestScore = (scoreOfChild[0],child.move)
       if bestScore[0] < beta[0]:
         beta = bestScore
-        SaveToFile(f"Setting Beta (min) to {beta}")
+        #SaveToFile(f"Setting Beta (min) to {beta}")
       if beta[0] <= alpha[0]:
         pass
-        SaveToFile(f"Breaking {child}: {alpha}, {beta}")
+        #SaveToFile(f" Breaking {child}: {alpha}, {beta}")
         break
-  #Once done all the leaf node under node
-  #eval move
-  score = node.Score()
-  if checkmate:
-    score += Values['checkmate']
-  if promo:
-    score += Values['promo']
-  if stalemate:
-    score = 0
-  #add score to the best of the children
-  if isMaximisingPlayer:
-    score = -score
-  score = bestScore[0]+score
-  #undo move
+
   board = copy.deepcopy(node.board)
-  SaveToFile(f"Score {node}: {score}")
-  return (score,bestScore[1])
+  return bestScore
 
 def SaveToFile(txt):
   #used to debug
